@@ -1,8 +1,8 @@
 # 手机蓝牙键盘（Android → 蓝牙 HID → 电脑）
 
-> 📦 **GitHub 仓库**：https://github.com/halala1989/bluetooth-hid-keyboard
+> 📦 **GitHub 仓库**：https://github.com/mechanismlab/carekey-suite
 > 🌿 **两条产品线**：`phone-keyboard`（默认分支，手机蓝牙键盘 v1.x）｜ `master`（Pico W 方案 v10/v11）
-> 🔁 **换电脑迁移**：`git clone https://github.com/halala1989/bluetooth-hid-keyboard.git` 后见 `docs/MIGRATION.md`；
+> 🔁 **换电脑迁移**：`git clone https://github.com/mechanismlab/carekey-suite.git` 后见 `docs/MIGRATION.md`；
 > 📖 开发历史/对话记录整理见 `docs/HISTORY.md`
 
 ## 🚀 零代码迁移（懒人专用：交给新电脑的 ChatGPT）

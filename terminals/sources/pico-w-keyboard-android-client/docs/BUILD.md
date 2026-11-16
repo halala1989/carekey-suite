@@ -40,7 +40,7 @@
 ### CI 徽章
 
 ```markdown
-[![Build Debug APK](https://github.com/halala1989/pico-w-keyboard/actions/workflows/android-build.yml/badge.svg)](https://github.com/halala1989/pico-w-keyboard/actions/workflows/android-build.yml)
+[![Build Debug APK](https://github.com/mechanismlab/pico-w-keyboard/actions/workflows/android-build.yml/badge.svg)](https://github.com/mechanismlab/pico-w-keyboard/actions/workflows/android-build.yml)
 ```
 
 ## 3. 常见构建问题

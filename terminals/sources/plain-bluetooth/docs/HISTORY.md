@@ -1,7 +1,7 @@
 # 项目开发历史（对话记录整理）
 
 > 本文档由 2026-08-25 ~ 2026-08-26 的开发对话整理而成，方便换电脑后快速了解来龙去脉。
-> 托管仓库：https://github.com/halala1989/bluetooth-hid-keyboard
+> 托管仓库：https://github.com/mechanismlab/carekey-suite
 
 ## 一、项目简介（两条产品线）
 
@@ -209,8 +209,8 @@
 ## 七、如何继续开发（换电脑）
 
 ```powershell
-git clone https://github.com/halala1989/bluetooth-hid-keyboard.git
-cd bluetooth-hid-keyboard
+git clone https://github.com/mechanismlab/carekey-suite.git
+cd carekey-suite
 git checkout phone-keyboard        # 当前产品线
 ```
 环境（CC Switch / ChatGPT 配置、构建工具链）迁移见 `docs/MIGRATION.md`。

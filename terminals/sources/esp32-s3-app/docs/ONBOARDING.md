@@ -8,12 +8,12 @@
 ---
 你好，请帮我把这个 GitHub 仓库完整克隆到本电脑（我全程不敲命令，由你执行）：
 
-仓库：https://github.com/halala1989/bluetooth-hid-keyboard
+仓库：https://github.com/mechanismlab/carekey-suite
 
 请按以下步骤做，每一步做完简单确认：
 
-1. 先用 `git clone https://github.com/halala1989/bluetooth-hid-keyboard.git` 把仓库克隆到本地，
-   目录建议放在 `C:\Users\<当前用户名>\Documents\Projects\bluetooth-hid-keyboard`（没有就创建）。
+1. 先用 `git clone https://github.com/mechanismlab/carekey-suite.git` 把仓库克隆到本地，
+   目录建议放在 `C:\Users\<当前用户名>\Documents\Projects\carekey-suite`（没有就创建）。
 2. 克隆完成后，进入仓库目录，读取这几个文件并理解项目：
    - `README.md`（项目说明）
    - `docs/MIGRATION.md`（迁移指南）

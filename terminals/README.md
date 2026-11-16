@@ -19,8 +19,8 @@
 - `sources/pico-w-master/`：Pico W v10/v11 固件与 Android 客户端源码快照。
 - `sources/esp32-s3-app/`：ESP32-S3 蓝牙桥接专用版源码快照。
 - `sources/multi-target-6/`：包含 ESP32-S3、YD-ESP32-S3 N16R8 和新版 Android 客户端的多目标源码快照。
-- `sources/pico-w-keyboard-android-client/`：独立仓库 `halala1989/pico-w-keyboard`。
-- `sources/pico-w-firmware-independent/`：独立仓库 `halala1989/pico-w-firmware`。
+- `sources/pico-w-keyboard-android-client/`：独立仓库 `mechanismlab/pico-w-keyboard`。
+- `sources/pico-w-firmware-independent/`：独立仓库 `mechanismlab/pico-w-firmware`。
 
 所有快照只归档源码、配置和文档，不保存旧 APK/UF2 二进制；构建所需的预编译固件仍可从原分支或发布目录恢复。
 
