@@ -15,6 +15,11 @@ class HidProtocol(private val engine: TypingEngine) {
         engine.typeText(text)
     }
 
+    /** 输入文本，并允许后台服务通过 control 暂停、继续或停止。 */
+    suspend fun typeText(text: String, control: TextOutputControl) {
+        engine.typeText(text, control)
+    }
+
     /** 按下按键 */
     suspend fun pressKey(key: SpecialKey) {
         val code = HidKeys.specialKeyCode(key.name) ?: return

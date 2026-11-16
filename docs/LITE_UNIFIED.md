@@ -6,7 +6,7 @@
 
 - 应用名称：`全终端 Lite 键盘`
 - applicationId：`com.hidble.carekeyboard.lite`
-- 版本：`4.0-test30-lite8`
+- 版本：`4.0-test30-lite9`
 - 可与医疗住院管理正式测试版同时安装。
 
 ## 聚合的终端
@@ -28,6 +28,10 @@
 - 下次进入连接页会先主动重连上次设备；失败时再扫描并选择新设备。
 - 保留文字输入、发送、暂停、停止、清空、1–10 档速度、四种中文输入模式和常用语。
 - 暂停后点击发送从暂停位置继续；停止后再次发送从头开始。
+- 输出任务由独立前台服务执行，切后台、页面被回收或屏幕自动关闭后仍会继续。
+- 输出期间持有 CPU 局部唤醒锁；通知栏提供暂停、继续和停止操作。
+- 长文本每 24 个字符执行一次安全排空，显式释放所有按键并等待 HID 缓冲消化，避免高速长文遗留修饰键后误触清空快捷键。
+- 输入框内容自动保存为本地草稿；页面被系统重建或异常关闭后会恢复上次文字。
 - 不显示大模型、API Token、住院患者和病历文书入口。
 - Lite 构建使用独立包名、独立图标和独立应用名称，不和完整医疗版互相覆盖。
 
@@ -58,6 +62,7 @@ android/app/build/outputs/apk/lite/app-lite.apk
 
 ```text
 android/app/src/main/java/com/hidble/phonekeyboard/LiteKeyboardActivity.kt
+android/app/src/main/java/com/hidble/phonekeyboard/LiteOutputService.kt
 android/app/src/main/java/com/hidble/phonekeyboard/LiteConnectionActivity.kt
 android/app/src/main/java/com/hidble/phonekeyboard/LiteConnectionMemory.kt
 android/app/src/main/res/layout/activity_lite_keyboard.xml
@@ -81,4 +86,6 @@ Lite 使用资源布尔值 `lite_edition` 切换：
 - Pico W、ESP32-S3 Super Mini、YD-ESP32-S3 的扫描、保存地址和重连。
 - 四种中文输入模式与第 8–10 档速度。
 - 外接板暂停、继续和完全停止。
+- 屏幕自动关闭后，手机蓝牙 HID 和开发板输出均继续到完成。
+- 超过 1000 字的普通文本与中文文本不出现全选、删除或清屏等修饰键误触。
 - 常用语新增、修改、删除与插入。

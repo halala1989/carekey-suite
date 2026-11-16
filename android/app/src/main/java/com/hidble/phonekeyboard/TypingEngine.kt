@@ -141,6 +141,9 @@ class TextOutputControl {
     @Volatile
     var cancelled: Boolean = false
 
+    @Volatile
+    var interrupted: Boolean = false
+
     var onProgress: ((Int, Int) -> Unit)? = null
 
     suspend fun checkpoint() {
@@ -184,9 +187,11 @@ class TypingEngine(
         private const val LEVEL_9_MIN_DELAY_MS = 5L
         private const val LEVEL_10_MIN_DELAY_MS = 2L
         /** 长文本自动分段：每段字符数 */
-        const val CHUNK_SIZE = 40
-        /** 段间暂停，让蓝牙发送缓冲消化，避免长文本高速发送时丢字 */
-        private const val CHUNK_FLUSH_MS = 40L
+        const val CHUNK_SIZE = 24
+        /** 段间使用不随高速档压缩的安全排空间隔，避免 HID 缓冲丢失按键抬起或修饰键释放。 */
+        private const val CHUNK_FLUSH_MS = 160L
+        /** 开始输出前先给主机一点时间处理全释放报告，清除旧修饰键状态。 */
+        private const val START_SETTLE_MS = 60L
         /** 单份报告发送失败的最大重试次数（约 1 秒），仍失败视为连接中断 */
         private const val SEND_MAX_RETRIES = 50
         private const val SEND_RETRY_WAIT_MS = 20L
@@ -234,7 +239,8 @@ class TypingEngine(
         try {
             gbkNumLockWarned = false
             // 发送前先清掉目标端可能残留的按键/修饰键状态（避免误触全选/快捷键导致删光文本）
-            releaseAll()
+            releaseAllSafely()
+            delay(START_SETTLE_MS)
             for (cp in cps) {
                 control?.checkpoint()
                 if (cp == '\r'.code) continue
@@ -254,9 +260,16 @@ class TypingEngine(
                 }
                 sent++
                 control?.onProgress?.invoke(sent, cps.size)
-                if (sent % CHUNK_SIZE == 0) delay(scaled(CHUNK_FLUSH_MS.toInt()))
+                if (sent % CHUNK_SIZE == 0) {
+                    // 关键安全边界：显式释放全部按键并暂停，绝不能让 CHUNK 间隔随第 9/10 档压到毫秒级。
+                    // 否则主机可能丢掉空报告，遗留 Alt/Ctrl/Shift，随后被目标软件解释为全选或清空快捷键。
+                    releaseAllSafely()
+                    delay(maxOf(scaled(CHUNK_FLUSH_MS.toInt()), CHUNK_FLUSH_MS))
+                    control?.checkpoint()
+                }
             }
         } catch (e: HidSendInterruptedException) {
+            control?.interrupted = true
             releaseAll()
             onSendInterrupted?.invoke(sent)
         } catch (e: CancellationException) {
@@ -272,6 +285,15 @@ class TypingEngine(
             send(ByteArray(8))
         } catch (e: Exception) {
             // 忽略：尽力而为
+        }
+    }
+
+    /** 等待全释放报告真正被 HID 接口接受，用于长文本安全分段边界。 */
+    private suspend fun releaseAllSafely() {
+        try {
+            sendReportWithRetry(ByteArray(8))
+        } catch (e: HidSendInterruptedException) {
+            // 连接已经中断，后续发送会再次报告失败。
         }
     }
 

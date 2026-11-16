@@ -19,10 +19,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
+import androidx.core.widget.doAfterTextChanged
 import org.json.JSONArray
 
 class LiteKeyboardActivity : AppCompatActivity() {
@@ -32,6 +29,7 @@ class LiteKeyboardActivity : AppCompatActivity() {
         private const val KEY_SPEED_LEVEL = "speed_level"
         private const val KEY_UNICODE_MODE = "unicode_mode"
         private const val KEY_PHRASES = "phrases"
+        private const val KEY_DRAFT_TEXT = "lite_draft_text"
         private const val PERMISSION_REQUEST_CODE = 3101
     }
 
@@ -56,14 +54,10 @@ class LiteKeyboardActivity : AppCompatActivity() {
         "GBK（自动确保 NumLock）" to TypingEngine.MODE_GBK
     )
     private var suppressModeEvent = false
-    private var outputControl: TextOutputControl? = null
-    private var sendJob: Job? = null
-    private var outputGeneration = 0
-    private var outputPaused = false
-    private var activeOutputIsBoard = false
-    private var activeDeviceLabel = ""
-    private var sentCharacters = 0
-    private var totalCharacters = 0
+
+    private val outputStateListener: (LiteOutputSnapshot) -> Unit = { snapshot ->
+        runOnUiThread { renderOutputState(snapshot) }
+    }
 
     private val phoneStateListener: (KeyboardSnapshot) -> Unit = {
         runOnUiThread { refreshTerminalStatus() }
@@ -79,6 +73,10 @@ class LiteKeyboardActivity : AppCompatActivity() {
         terminalName = findViewById(R.id.liteTerminalName)
         terminalDetail = findViewById(R.id.liteTerminalDetail)
         textInput = findViewById(R.id.liteTextInput)
+        textInput.setText(prefs.getString(KEY_DRAFT_TEXT, "").orEmpty())
+        textInput.doAfterTextChanged { editable ->
+            prefs.edit().putString(KEY_DRAFT_TEXT, editable?.toString().orEmpty()).apply()
+        }
         sendButton = findViewById(R.id.liteSendButton)
         pauseButton = findViewById(R.id.litePauseButton)
         stopButton = findViewById(R.id.liteStopButton)
@@ -100,8 +98,13 @@ class LiteKeyboardActivity : AppCompatActivity() {
         clearButton.setOnClickListener { clearInput() }
         setupSpeed()
         setupUnicodeMode()
-        refreshOutputControls()
+        renderOutputState(LiteOutputService.snapshot())
         requestBluetoothPermissions()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        LiteOutputService.addListener(outputStateListener)
     }
 
     override fun onResume() {
@@ -155,15 +158,13 @@ class LiteKeyboardActivity : AppCompatActivity() {
         }
     }
 
+    override fun onStop() {
+        LiteOutputService.removeListener(outputStateListener)
+        super.onStop()
+    }
+
     override fun onDestroy() {
-        if (outputControl != null) {
-            outputGeneration++
-            outputControl?.cancel()
-            sendJob?.cancel()
-            if (activeOutputIsBoard) BoardLink.stopOutput() else KeyboardRuntime.releaseAll()
-            outputControl = null
-            sendJob = null
-        }
+        LiteOutputService.removeListener(outputStateListener)
         super.onDestroy()
     }
 
@@ -224,9 +225,9 @@ class LiteKeyboardActivity : AppCompatActivity() {
     }
 
     private fun handleSendButton() {
-        val control = outputControl
-        if (control != null) {
-            if (outputPaused) resumeOutput()
+        val snapshot = LiteOutputService.snapshot()
+        if (snapshot.isActive) {
+            if (snapshot.isPaused) resumeOutput()
             return
         }
         startOutputFromBeginning()
@@ -249,151 +250,86 @@ class LiteKeyboardActivity : AppCompatActivity() {
             return
         }
 
-        val generation = ++outputGeneration
-        val control = TextOutputControl()
-        outputControl = control
-        outputPaused = false
-        activeOutputIsBoard = terminal.isBoard
-        activeDeviceLabel = connectedDeviceName() ?: terminal.displayName
-        sentCharacters = 0
-        totalCharacters = text.codePointCount(0, text.length)
-        control.onProgress = { sent, total ->
-            runOnUiThread {
-                if (generation == outputGeneration && outputControl === control) {
-                    sentCharacters = sent
-                    totalCharacters = total
-                    if (!outputPaused) updateRunningState()
-                }
-            }
-        }
-        updateRunningState()
-        refreshOutputControls()
-
-        if (terminal.id == TerminalRegistry.PHONE_HID) {
-            KeyboardRuntime.typeTextControlled(
-                text = text,
-                speed = prefs.getInt(KEY_SPEED_LEVEL, 5).coerceIn(1, 10),
-                control = control
-            ) { success, message ->
-                runOnUiThread { finishOutput(generation, success, message) }
-            }
-        } else {
-            sendJob = lifecycleScope.launch {
-                try {
-                    sendToBoardControlled(text, control)
-                    finishOutput(generation, true, "发送完成")
-                } catch (error: CancellationException) {
-                    if (generation == outputGeneration && !control.cancelled) {
-                        finishOutput(generation, false, "发送已中断")
-                    }
-                } catch (error: Exception) {
-                    finishOutput(
-                        generation,
-                        false,
-                        error.message ?: "发送失败"
-                    )
-                }
-            }
-        }
-    }
-
-    private suspend fun sendToBoardControlled(text: String, control: TextOutputControl) {
-        val board = BoardLink.get(this)
-        if (!board.isConnected()) error("当前设备尚未连接")
-        val speedResponse = board.sendCommandAwait(
-            "SPEED:${prefs.getInt(KEY_SPEED_LEVEL, 5).coerceIn(1, 10)}"
+        val request = LiteOutputRequest(
+            text = text,
+            deviceLabel = connectedDeviceName() ?: terminal.displayName,
+            isBoard = terminal.isBoard,
+            speedLevel = prefs.getInt(KEY_SPEED_LEVEL, 5).coerceIn(1, 10),
+            unicodeMode = prefs.getInt(KEY_UNICODE_MODE, TypingEngine.MODE_ALTX)
         )
-        if (speedResponse.startsWith("ERR")) error(speedResponse)
-        val modeResponse = board.sendCommandAwait(
-            "UMOD:${prefs.getInt(KEY_UNICODE_MODE, TypingEngine.MODE_ALTX)}"
-        )
-        if (modeResponse.startsWith("ERR")) error(modeResponse)
-        val codePoints = text.codePoints().toArray()
-        for ((index, codePoint) in codePoints.withIndex()) {
-            control.checkpoint()
-            if (control.cancelled) throw CancellationException("Output stopped")
-            val character = String(Character.toChars(codePoint))
-            val response = board.sendTextAwait(character)
-            if (response.startsWith("ERR")) error(response)
-            control.onProgress?.invoke(index + 1, codePoints.size)
+        if (LiteOutputService.startOutput(this, request)) {
+            Toast.makeText(this, "已开始后台输出，息屏后仍会继续", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun pauseOutput() {
-        val control = outputControl ?: return
-        if (outputPaused) return
-        control.paused = true
-        outputPaused = true
-        sendState.text = "已暂停，点击“发送”从当前位置继续"
-        sendState.setTextColor(ContextCompat.getColor(this, R.color.clinical_warning))
-        refreshOutputControls()
+        if (LiteOutputService.snapshot().status == LiteOutputStatus.RUNNING) {
+            LiteOutputService.pauseOutput(this)
+        }
     }
 
     private fun resumeOutput() {
-        val control = outputControl ?: return
-        if (!outputPaused) return
-        control.paused = false
-        outputPaused = false
-        updateRunningState()
-        refreshOutputControls()
+        if (LiteOutputService.snapshot().isPaused) {
+            LiteOutputService.resumeOutput(this)
+        }
     }
 
     private fun stopOutput(statusMessage: String = "已停止，再次发送将从头开始") {
-        if (outputControl == null) return
-        outputGeneration++
-        outputControl?.cancel()
-        sendJob?.cancel()
-        sendJob = null
-        if (activeOutputIsBoard) BoardLink.stopOutput() else KeyboardRuntime.releaseAll()
-        outputControl = null
-        outputPaused = false
+        if (!LiteOutputService.snapshot().isActive) return
+        LiteOutputService.stopOutput(this)
         sendState.text = statusMessage
         sendState.setTextColor(ContextCompat.getColor(this, R.color.text_secondary))
-        refreshOutputControls()
     }
 
     private fun clearInput() {
-        if (outputControl != null) stopOutput("输出已停止，输入内容已清空")
+        val wasActive = LiteOutputService.snapshot().isActive
+        if (wasActive) stopOutput("输出已停止，输入内容已清空")
         textInput.setText("")
         textInput.requestFocus()
-        if (outputControl == null) {
+        if (!wasActive) {
             sendState.text = "输入内容已清空"
             sendState.setTextColor(ContextCompat.getColor(this, R.color.text_secondary))
         }
     }
 
-    private fun finishOutput(generation: Int, success: Boolean, message: String) {
-        if (generation != outputGeneration) return
-        outputControl = null
-        sendJob = null
-        outputPaused = false
-        sendState.text = when {
-            success -> "发送完成：${sentCharacters.coerceAtLeast(totalCharacters)} / $totalCharacters"
-            else -> message
+    private fun renderOutputState(snapshot: LiteOutputSnapshot) {
+        if (!::sendState.isInitialized) return
+        sendState.text = when (snapshot.status) {
+            LiteOutputStatus.IDLE -> if (connectedDeviceName() != null) {
+                "设备已连接，可以发送"
+            } else {
+                "连接设备后即可发送"
+            }
+            LiteOutputStatus.STARTING -> "正在启动后台输出…"
+            LiteOutputStatus.RUNNING ->
+                "后台发送到 ${snapshot.deviceLabel}：${snapshot.sentCharacters} / ${snapshot.totalCharacters} 字"
+            LiteOutputStatus.PAUSED -> snapshot.message
+            LiteOutputStatus.COMPLETED -> snapshot.message
+            LiteOutputStatus.FAILED -> snapshot.message
+            LiteOutputStatus.STOPPED -> snapshot.message
         }
         sendState.setTextColor(
             ContextCompat.getColor(
                 this,
-                if (success) R.color.connected else R.color.clinical_danger
+                when (snapshot.status) {
+                    LiteOutputStatus.RUNNING,
+                    LiteOutputStatus.STARTING,
+                    LiteOutputStatus.COMPLETED -> R.color.connected
+                    LiteOutputStatus.PAUSED -> R.color.clinical_warning
+                    LiteOutputStatus.FAILED -> R.color.clinical_danger
+                    else -> R.color.text_secondary
+                }
             )
         )
-        refreshOutputControls()
-    }
 
-    private fun updateRunningState() {
-        sendState.text = "正在发送到 $activeDeviceLabel：$sentCharacters / $totalCharacters"
-        sendState.setTextColor(ContextCompat.getColor(this, R.color.accent))
-    }
-
-    private fun refreshOutputControls() {
-        val active = outputControl != null && !outputControl!!.cancelled
-        sendButton.isEnabled = !active || outputPaused
-        pauseButton.isEnabled = active && !outputPaused
+        val active = snapshot.isActive
+        sendButton.isEnabled = !active || snapshot.isPaused
+        pauseButton.isEnabled = snapshot.status == LiteOutputStatus.RUNNING
         stopButton.isEnabled = active
         clearButton.isEnabled = true
         textInput.isEnabled = !active
-        sendButton.text = "发送"
-        pauseButton.text = if (outputPaused) "已暂停" else "暂停"
+        sendButton.text = if (snapshot.isPaused) "继续" else "发送"
+        pauseButton.text = if (snapshot.isPaused) "已暂停" else "暂停"
     }
 
     private fun refreshTerminalStatus() {
@@ -422,7 +358,7 @@ class LiteKeyboardActivity : AppCompatActivity() {
             remembered != null -> "MAC：${remembered.address} · 点击连接可主动重连"
             else -> "点击“选择终端并连接”扫描并记住设备"
         }
-        if (outputControl == null) {
+        if (!LiteOutputService.snapshot().isActive) {
             sendState.text = if (connected) "设备已连接，可以发送" else "连接设备后即可发送"
             sendState.setTextColor(
                 ContextCompat.getColor(
@@ -441,11 +377,15 @@ class LiteKeyboardActivity : AppCompatActivity() {
 
     private fun requestBluetoothPermissions() {
         val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            arrayOf(
+            val bluetoothPermissions = mutableListOf(
                 Manifest.permission.BLUETOOTH_SCAN,
                 Manifest.permission.BLUETOOTH_CONNECT,
                 Manifest.permission.BLUETOOTH_ADVERTISE
             )
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                bluetoothPermissions += Manifest.permission.POST_NOTIFICATIONS
+            }
+            bluetoothPermissions.toTypedArray()
         } else {
             arrayOf(
                 Manifest.permission.BLUETOOTH,

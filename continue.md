@@ -8,10 +8,10 @@
 - 默认分支：`main`，用于套件总览和版本导航
 - 完整医疗版：`medical-record-app-v4`，当前为 `4.0-test33`
 - Lite 长期分支：`lite-input`
-- Lite 工程历史：`codex/lite-unified`，本次拉取到 `4.0-test30-lite8`
+- Lite 工程历史：`codex/lite-unified`，当前开发到 `4.0-test30-lite9`
 - 芯片和终端工程分支：`multi-target-6`、`esp32-s3-app`
 
-本次工作目录当前位于 `codex/lite-unified`。如果继续开发 Lite8 的发送、暂停、停止逻辑，请保留在这个分支；如果要继续长期维护 Lite，请从 `origin/lite-input` 新建本地跟踪分支。
+本次工作目录当前位于 `codex/lite-unified`。如果继续开发 Lite9 的后台输出、发送、暂停和停止逻辑，请保留在这个分支；如果要继续长期维护 Lite，请从 `origin/lite-input` 新建本地跟踪分支。
 
 ## 新电脑首次获取
 
@@ -43,16 +43,15 @@ git switch --track origin/lite-input
 git pull --ff-only
 ```
 
-## 当前 Lite8 构建
+## 当前 Lite9 构建
 
 - 应用名：`全终端 Lite 键盘`
 - applicationId：`com.hidble.carekeyboard.lite`
-- 版本：`4.0-test30-lite8`
-- versionCode：`40030`
-- APK：`releases/v4.0-test30-lite8/全终端Lite键盘-v4.0-test30-lite8.apk`
-- SHA-256：`D6472DB2F6D983FBC3645FF9037E881FCD35E9A86F7FB1147B7F35D93EBE33F4`
+- 版本：`4.0-test30-lite9`
+- versionCode：`40031`
+- APK：`releases/v4.0-test30-lite9/全终端Lite键盘-v4.0-test30-lite9.apk`
 
-Lite8 新增“发送”“暂停”“停止”“清空”控制。暂停后再次发送会从暂停位置继续；停止后再次发送会从头开始；外接板改为逐字符等待确认，降低暂停和停止的延迟。
+Lite9 把输出任务移入独立前台服务并持有 CPU 局部唤醒锁，屏幕关闭后仍继续输出；通知栏可以暂停、继续和停止。长文本每 24 字安全排空并显式释放按键，降低高速发送后误触清屏快捷键的风险。
 
 ## Android 构建
 
@@ -80,6 +79,7 @@ android/app/build/outputs/apk/lite/app-lite.apk
 ```text
 android/app/src/main/java/com/hidble/phonekeyboard/
   LiteKeyboardActivity.kt
+  LiteOutputService.kt
   LiteConnectionActivity.kt
   LiteConnectionMemory.kt
   TerminalRegistry.kt
@@ -97,8 +97,8 @@ terminals/sources/esp32-s3-app/
 
 ## 当前验证边界
 
-- Lite8 APK 已完成构建和版本校验。
-- 文档不表示 Lite8 的四个输出控制按钮已经在所有手机、电脑和板子上完成真机回归。
+- Lite9 APK 已完成构建和版本校验。
+- 文档不表示 Lite9 的后台输出和长文防清屏机制已经在所有手机、电脑和板子上完成真机回归。
 - GBK、自动 NumLock 和最新速度固件应继续在目标电脑的中文软件中实测。
 - 完整医疗版和 Lite 版使用不同 applicationId，可以同时安装。
 

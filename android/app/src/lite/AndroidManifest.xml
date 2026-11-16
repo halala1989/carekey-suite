@@ -32,5 +32,11 @@
             android:configChanges="orientation|screenSize|keyboardHidden|screenLayout|smallestScreenSize"
             android:exported="false"
             android:theme="@style/Theme.HIDBLEKeyboard" />
+
+        <service
+            android:name=".LiteOutputService"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice"
+            android:stopWithTask="false" />
     </application>
 </manifest>
