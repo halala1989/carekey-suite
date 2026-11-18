@@ -414,9 +414,9 @@ class LiteOutputService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         val title = when (snapshot.status) {
-            LiteOutputStatus.PAUSED -> "Lite 键盘输出已暂停"
-            LiteOutputStatus.STARTING -> "Lite 键盘正在启动后台输出"
-            else -> "Lite 键盘正在后台输出"
+            LiteOutputStatus.PAUSED -> "${getString(R.string.lite_app_name)}输出已暂停"
+            LiteOutputStatus.STARTING -> "${getString(R.string.lite_app_name)}正在启动后台输出"
+            else -> "${getString(R.string.lite_app_name)}正在后台输出"
         }
         val progressText = when {
             snapshot.totalCharacters > 0 ->
@@ -468,7 +468,7 @@ class LiteOutputService : Service() {
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "Lite 键盘后台输出",
+            "${getString(R.string.lite_app_name)}后台输出",
             NotificationManager.IMPORTANCE_LOW
         ).apply {
             description = "输出期间保持运行，息屏后仍会继续"

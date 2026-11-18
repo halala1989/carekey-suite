@@ -1,12 +1,13 @@
-# 全终端 Lite 键盘
+# 姜哥写病历（Lite9 独立版）
 
-本分支 `codex/lite-unified` 将历史 Lite 版本聚合为一个独立、简明的 Android 应用。
+本分支 `codex/jiangge-medical-lite9` 从 Lite9 派生，作为“姜哥写病历”独立 Android 软件维护。
 
 ## 应用身份
 
-- 应用名称：`全终端 Lite 键盘`
-- applicationId：`com.hidble.carekeyboard.lite`
-- 版本：`4.0-test30-lite9`
+- 应用名称：`姜哥写病历`
+- applicationId：`com.hidble.carekeyboard.jiangge`
+- 版本：`4.0-test30-jiangge1`
+- 独立分支：`codex/jiangge-medical-lite9`
 - 可与医疗住院管理正式测试版同时安装。
 
 ## 聚合的终端
@@ -33,7 +34,7 @@
 - 长文本每 24 个字符执行一次安全排空，显式释放所有按键并等待 HID 缓冲消化，避免高速长文遗留修饰键后误触清空快捷键。
 - 输入框内容自动保存为本地草稿；页面被系统重建或异常关闭后会恢复上次文字。
 - 不显示大模型、API Token、住院患者和病历文书入口。
-- Lite 构建使用独立包名、独立图标和独立应用名称，不和完整医疗版互相覆盖。
+- 本版本使用独立包名和应用名称，可与原 Lite9、完整医疗版同时安装。
 
 ## 构建
 

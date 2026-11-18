@@ -8,10 +8,10 @@
 - 默认分支：`main`，用于套件总览和版本导航
 - 完整医疗版：`medical-record-app-v4`，当前为 `4.0-test33`
 - Lite 长期分支：`lite-input`
-- Lite 工程历史：`codex/lite-unified`，当前开发到 `4.0-test30-lite9`
+- “姜哥写病历”独立版：`codex/jiangge-medical-lite9`，基于 Lite9
 - 芯片和终端工程分支：`multi-target-6`、`esp32-s3-app`
 
-本次工作目录当前位于 `codex/lite-unified`。如果继续开发 Lite9 的后台输出、发送、暂停和停止逻辑，请保留在这个分支；如果要继续长期维护 Lite，请从 `origin/lite-input` 新建本地跟踪分支。
+本次工作目录当前位于 `codex/jiangge-medical-lite9`。该分支只维护“姜哥写病历”独立应用，不并入原 Lite9 或完整医疗版。
 
 ## 新电脑首次获取
 
@@ -19,7 +19,7 @@
 git clone https://github.com/mechanismlab/carekey-suite.git
 cd carekey-suite
 git fetch --all --prune
-git switch --track origin/codex/lite-unified
+git switch --track origin/codex/jiangge-medical-lite9
 git status --short --branch
 ```
 
@@ -43,13 +43,13 @@ git switch --track origin/lite-input
 git pull --ff-only
 ```
 
-## 当前 Lite9 构建
+## 当前姜哥写病历构建
 
-- 应用名：`全终端 Lite 键盘`
-- applicationId：`com.hidble.carekeyboard.lite`
-- 版本：`4.0-test30-lite9`
+- 应用名：`姜哥写病历`
+- applicationId：`com.hidble.carekeyboard.jiangge`
+- 版本：`4.0-test30-jiangge1`
 - versionCode：`40031`
-- APK：`releases/v4.0-test30-lite9/全终端Lite键盘-v4.0-test30-lite9.apk`
+- APK：`releases/v4.0-test30-jiangge1/姜哥写病历-v4.0-test30-jiangge1.apk`
 
 Lite9 把输出任务移入独立前台服务并持有 CPU 局部唤醒锁，屏幕关闭后仍继续输出；通知栏可以暂停、继续和停止。长文本每 24 字安全排空并显式释放按键，降低高速发送后误触清屏快捷键的风险。
 

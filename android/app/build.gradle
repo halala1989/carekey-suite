@@ -23,8 +23,8 @@ android {
         }
         lite {
             initWith debug
-            applicationIdSuffix ".lite"
-            versionNameSuffix "-lite9"
+            applicationIdSuffix ".jiangge"
+            versionNameSuffix "-jiangge1"
             signingConfig signingConfigs.debug
             resValue "bool", "lite_edition", "true"
         }

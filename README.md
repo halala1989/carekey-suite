@@ -1,7 +1,7 @@
-# 手机蓝牙键盘（Android → 蓝牙 HID → 电脑）
+# 姜哥写病历（Lite9 独立版）
 
-> **全终端 Lite 简明版｜独立分支 `codex/lite-unified`**
-> 把原先按手机蓝牙、Pico W、ESP32-S3、YD-ESP32-S3 分开的 Lite 应用聚合为一个独立 APK。默认首页只保留终端选择、连接状态、文字发送、速度、中文输入模式和常用语；不包含大模型与住院病历。详见 [`docs/LITE_UNIFIED.md`](docs/LITE_UNIFIED.md)。
+> **独立应用｜独立分支 `codex/jiangge-medical-lite9`**
+> 基于 Lite9 的独立键盘应用，应用名“姜哥写病历”，包名 `com.hidble.carekeyboard.jiangge`，可与其他 Lite/医疗版同时安装。保留后台输出、息屏继续、发送控制、速度、中文输入模式和常用语。详见 [`docs/LITE_UNIFIED.md`](docs/LITE_UNIFIED.md)。
 
 > **v3.0 Beta：住院全流程管理**
 > App 首页现已改为患者列表，支持基本信息、病例文书、草稿保存和一键蓝牙 HID 输出。原键盘功能保留在「键盘工具」中。
